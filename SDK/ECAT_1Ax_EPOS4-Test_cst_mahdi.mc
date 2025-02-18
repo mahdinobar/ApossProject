@@ -70,7 +70,7 @@ long main(void) {
 	long adcRawValue;
     double voltage;
 
-    long ActPosition;
+    long ActPosition, ActVelocity, ActTorque;
 
 	print("-----------------------------------------------------------");
 	print(" Test application EtherCAT Master with 1 EPOS4 drive");
@@ -202,15 +202,19 @@ long main(void) {
 
 
 	// Loop to send torque and print position every 1 ms
-    for (i = 0; i < 30; i++) {  // Example loop to run for 1000 iterations
+    for (i = 0; i < 1000; i++) {  // Example loop to run for 1000 iterations
         // Send motor rated torque (e.g., 1000 mNm)
         AXE_PROCESS(C_AXIS1, REG_USERREFCUR) = 100;  // Set the torque (adjust value as needed)
         // Retrieve the actual position (using Sysvar to read the actual position)
         ActPosition = Sysvar[0x01606400];  // 0x01606400 is the correct SDO for actual position
+        ActVelocity = Sysvar[0x01606C00];  // 0x01606400 is the correct SDO for actual velocity
+        ActTorque = Sysvar[0x01607700];  // 0x01606400 is the correct SDO for actual torque
         // Print the actual position
-        print("Actual Position: ", ActPosition);
+        //print("Actual Position: ", ActPosition);
+        //print("Actual Velocity: ", ActVelocity);
+        print("Actual Torque: ", ActTorque);
         // Delay for 1 ms
-        Delay(100);  // Assuming Delay(1) causes a 20-millisecond delay
+        Delay(10);  // Assuming Delay(1) causes a 20-millisecond delay
     }
 
 

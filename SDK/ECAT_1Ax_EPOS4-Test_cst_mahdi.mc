@@ -9,6 +9,7 @@
 *	@example 	ECAT_1Ax_EPOS4-Test_cst.mc
 *
 */
+
 #define F_HALL 0x7388
 #define F_HALL_ANGLE 0x738A
 #define F_STO 0x8A88
@@ -16,19 +17,18 @@
 #define EPOS4_ACTUAL_ANALOG_INPUT 0x3160
 
 
-
 #include "SDK_ApossC.mc"
 
 // Parameters for the SDK function
-#define C_AXIS1 0						// Axis module number
+#define C_AXIS1	0						// Axis module number here
 
-#define C_AXIS1_POLARITY 0		// Definition of the polarity 0: Normal, 1: Inverse
+#define C_AXIS1_POLARITY 	0		// Definition of the polarity 0: Normal, 1: Inverse
 
 #define C_DRIVE_BUSID1 1000001			// The driveBusId is 1000000 plus the EtherCAT slave position in the bus
 
 #define C_EC_CYCLE_TIME	1				// Cycletime in milliseconds
 #define C_EC_OFFSET		1				// Shift offset
-#define C_PDO_NUMBER	1				// Used PDO number	//$B
+#define C_PDO_NUMBER	1				// Used PDO number
 
 // Encoder settings & axis user units (MACS)
 #define C_AXIS_ENCRES 			4*1600						// Resolution of the encoder for position feed back in increments (quadcounts)
@@ -60,23 +60,17 @@
 #define	C_AXIS_KFFDEC			0
 
 
-// Define appropriate register addresses or use the API to access these values
-#define REG_ACTPOS 0x6064     // Actual Position Register
-#define REG_ACTTORQUE 0x6077  // Actual Torque Register
-#define REG_USERREFCUR 0x6071// Target Torque Register
-
-
 long main(void) {
 
     long slaveCount, i,retval, axisIndex;
-    long ii;
     long homingStateAx_0=0;
 
-    long adcRawValue;
-    long activeTxPDOs;
-    long mappedObject1;
-    long adcPdoValue;
+    long status;
+	long masterStatus;
+	long adcRawValue;
     double voltage;
+
+    long ActPosition;
 
 	print("-----------------------------------------------------------");
 	print(" Test application EtherCAT Master with 1 EPOS4 drive");
@@ -97,7 +91,8 @@ long main(void) {
 	print("slavecount: ",slaveCount);
 
 	// initialising maxon drives
-	sdkEpos4_SetupECatSdoParam(C_DRIVE_BUSID1, C_PDO_NUMBER, C_AXIS1_POLARITY, EPOS4_OP_CST );	//$B
+	sdkEpos4_SetupECatSdoParam(C_DRIVE_BUSID1, C_PDO_NUMBER, C_AXIS1_POLARITY, EPOS4_OP_CST );
+
 	sdkEtherCATMasterDoMapping();
 
 
@@ -110,7 +105,7 @@ long main(void) {
 	// All axis have in this example the same parameters
 
 	// setup EtherCAT bus module for cst mode
-	sdkEpos4_SetupECatBusModule(C_AXIS1, C_DRIVE_BUSID1, C_PDO_NUMBER, EPOS4_OP_CST);	//$B
+	sdkEpos4_SetupECatBusModule(C_AXIS1, C_DRIVE_BUSID1, C_PDO_NUMBER, EPOS4_OP_CST);
 
 	// setup virtual amplifier for cst mode
 	sdkEpos4_SetupECatVirtAmp(C_AXIS1, C_AXIS_MAX_RPM, EPOS4_OP_CST);
@@ -192,46 +187,32 @@ long main(void) {
 
 	AxisControl(C_AXIS1, ON);
 
-	print("Checking EtherCAT Bus Status...");
-	if (sdkEtherCATMasterStatus() != 1) {
-    	print("Error: EtherCAT bus is not running!");
-    	Exit(1);
+
+	status = ECatMasterInfo(0x1000, 0, masterStatus);  // Pass the variable, not the address
+	if (status == 0) {
+		print("EtherCAT master status: ", masterStatus);
+		if (masterStatus == 0x08) {  // EC_STATE_OPERATIONAL
+			print("Master is operational.");
+		} else {
+			print("Master is not operational.");
+		}
 	} else {
-    	print("EtherCAT bus is running.");
+		print("Error: Unable to retrieve EtherCAT master status.");
 	}
 
 
-	for(i=0;i>=0;i--)
-	{
-		// printf("EtherCAT Status: %d\n", Sysvar[(0x03 << 24) + (0x1A02 << 16) + 0x04]);
-		// The value is given in per thousand of “Motor rated torque”
-		print("Set target torque → positive");
-		AXE_PROCESS(C_AXIS1,REG_USERREFCUR)= 100;
+	// Loop to send torque and print position every 1 ms
+    for (i = 0; i < 30; i++) {  // Example loop to run for 1000 iterations
+        // Send motor rated torque (e.g., 1000 mNm)
+        AXE_PROCESS(C_AXIS1, REG_USERREFCUR) = 100;  // Set the torque (adjust value as needed)
+        // Retrieve the actual position (using Sysvar to read the actual position)
+        ActPosition = Sysvar[0x01606400];  // 0x01606400 is the correct SDO for actual position
+        // Print the actual position
+        print("Actual Position: ", ActPosition);
+        // Delay for 1 ms
+        Delay(100);  // Assuming Delay(1) causes a 20-millisecond delay
+    }
 
-		Delay(4000);
-		print("Set target torque → negative");
-		AXE_PROCESS(C_AXIS1,REG_USERREFCUR)= -30;
-
-		Delay(4000);
-		print("Set target torque → zero");
-		AXE_PROCESS(C_AXIS1,REG_USERREFCUR)= 0;
-
-		Delay(4000);
-		print(i, " repetitions to go \n");
-
-		adcRawValue = SdoRead(C_DRIVE_BUSID1, EPOS4_ACTUAL_ANALOG_INPUT, 1);
-		print("Potentiometer ADC raw value: ", adcRawValue);
-		voltage = (adcRawValue * 10.0) / 4096.0;  // Convert to voltage
-		print("Potentiometer ADC Voltage: ", voltage, " V");
-
-		activeTxPDOs = SdoRead(C_DRIVE_BUSID1, 0x1C13, 0);
-		print("Active TxPDOs: ", activeTxPDOs);
-
-		//mappedObject1 = SdoRead(C_DRIVE_BUSID1, 0x1A00, 1);
-		//print("TxPDO1, Entry 1: ", mappedObject1);
-		//adcPdoValue = AXE_PROCESS(C_AXIS1, 0x2031);
-		//print("Analog Input from PDO: ", adcPdoValue);
-	}
 
 	AxisControl(C_AXIS1, OFF);
 

@@ -37,8 +37,6 @@
 long sdkEpos4_SetupECatBusModule(long axis, long busId, long pdoNumber, long operationMode)
 {
 	long busmod, slaveNo;
-	long test_index;
-	long position_value;
 
     busmod = axis;
     slaveNo = (busId-1000000);
@@ -80,18 +78,6 @@ long sdkEpos4_SetupECatBusModule(long axis, long busId, long pdoNumber, long ope
     BUSMOD_PARAM(busmod, BUSMOD_RXMAP_POVALUE3) =  pdoNumber*0x01000000 + 4*0x00010000 + 6;   // pdo ; length in bytes; bytes offset   current actual value
 
     BUSMOD_PARAM(busmod, BUSMOD_MODE) = BUSMOD_MODE_ACTIVATE_NOSTOP;                    // Start bus module
-
-
-	//test_index = (0x03 << 24) + (0x1A02 << 16) + 0x04;
-	//printf("Position Actual Value: %d\n", Sysvar[test_index]);
-
-	//test_index = (0x03 << 24) + (0x1A02 << 16);
-	//printf("Full PDO 3 Data: %d\n", Sysvar[test_index]);
-
-	//test_index = (0x03 << 24) + (pdoNumber << 16) + 2;
-	//printf("PDO Number: %d\n", pdoNumber);
-	//printf("EtherCAT Status: %d\n", Sysvar[0x03000000]);
-    //printf("+++++++Sysvar[%08X] = %d\n", test_index, Sysvar[test_index]);
 
     return(1);
 }

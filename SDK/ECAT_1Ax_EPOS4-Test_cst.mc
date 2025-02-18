@@ -20,7 +20,7 @@
 #include "SDK_ApossC.mc"
 
 // Parameters for the SDK function
-#define C_AXIS1	0						// Axis module number
+#define C_AXIS1	0						// Axis module number here
 
 #define C_AXIS1_POLARITY 	0		// Definition of the polarity 0: Normal, 1: Inverse
 
@@ -69,6 +69,8 @@ long main(void) {
 	long masterStatus;
 	long adcRawValue;
     double voltage;
+
+    long ActPosition;
 
 	print("-----------------------------------------------------------");
 	print(" Test application EtherCAT Master with 1 EPOS4 drive");
@@ -198,7 +200,15 @@ long main(void) {
 		print("Error: Unable to retrieve EtherCAT master status.");
 	}
 
+	for (i = 0; i < 30; i++) {
+		// Retrieve position from PDO
+		ActPosition = Sysvar[0x01606400];
 
+		// Print the position value
+		print("+++++Actual Position: ", ActPosition);
+
+		Delay(100);  // Delay for a bit before the next read
+	}
 
 	for(i=0;i>=0;i--)
 	{
@@ -206,21 +216,25 @@ long main(void) {
 		print("Set target torque → positive");
 		AXE_PROCESS(C_AXIS1,REG_USERREFCUR)= 100;
 
-		Delay(4000);
+		Delay(3000);
 		print("Set target torque → negative");
 		AXE_PROCESS(C_AXIS1,REG_USERREFCUR)= -40;
 
-		Delay(4000);
+		Delay(3000);
 		print("Set target torque → zero");
 		AXE_PROCESS(C_AXIS1,REG_USERREFCUR)= 0;
 
-		Delay(4000);
+		Delay(3000);
 		print(i, " repetitions to go \n");
 
 		adcRawValue = SdoRead(C_DRIVE_BUSID1, EPOS4_ACTUAL_ANALOG_INPUT, 1);
 		print("Potentiometer ADC raw value: ", adcRawValue);
 		voltage = (adcRawValue * 10.0) / 4096.0;  // Convert to voltage
 		print("Potentiometer ADC Voltage: ", voltage, " V");
+
+		ActPosition = Sysvar[0x01606400];
+		// Print the position value
+		print("+++++Actual Position: ", ActPosition);
 	}
 
 	AxisControl(C_AXIS1, OFF);

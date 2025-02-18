@@ -21,15 +21,12 @@
 // Parameters for the SDK function
 #define C_AXIS1	0						// Axis module number
 #define C_AXIS2	1						// Axis module number
-#define C_AXIS3	2						// Axis module number
 
 #define C_AXIS1_POLARITY 	0		// Definition of the polarity 0: Normal, 1: Inverse
 #define C_AXIS2_POLARITY 	0		// Definition of the polarity 0: Normal, 1: Inverse
-#define C_AXIS3_POLARITY 	0		// Definition of the polarity 0: Normal, 1: Inverse
 
 #define C_DRIVE_BUSID1 1000001			// The driveBusId is 1000000 plus the EtherCAT slave position in the bus
 #define C_DRIVE_BUSID2 1000002			// The driveBusId is 1000000 plus the EtherCAT slave position in the bus
-#define C_DRIVE_BUSID3 1000003			// The driveBusId is 1000000 plus the EtherCAT slave position in the bus
 
 #define C_EC_CYCLE_TIME	1				// Cycletime in milliseconds
 #define C_EC_OFFSET		1				// Shift offset
@@ -66,7 +63,7 @@
 
 // Set the bus ids of the all axis in the network
 long axis[] = {C_AXIS1, C_AXIS2, C_AXIS3};
-long busIds[] = {C_DRIVE_BUSID1, C_DRIVE_BUSID2, C_DRIVE_BUSID3};
+long busIds[] = {C_DRIVE_BUSID1, C_DRIVE_BUSID2};
 long numberOfAxis = arraylen(busIds);
 
 
@@ -82,7 +79,6 @@ long main(void) {
 	ErrorClear();
 	AmpErrorClear(C_AXIS1); // Clear error on EPOS4
 	AmpErrorClear(C_AXIS2); // Clear error on EPOS4
-	AmpErrorClear(C_AXIS3); // Clear error on EPOS4
 	InterruptSetup(ERROR, ErrorHandler);
 
 	ECatMasterCommand(0x1000, 0);
@@ -98,11 +94,11 @@ long main(void) {
 	// initialising maxon drives
 	sdkEpos4_SetupECatSdoParam(C_DRIVE_BUSID1, C_PDO_NUMBER, C_AXIS1_POLARITY, EPOS4_OP_CSP );
 	sdkEpos4_SetupECatSdoParam(C_DRIVE_BUSID2, C_PDO_NUMBER, C_AXIS2_POLARITY, EPOS4_OP_CSP );
-	sdkEpos4_SetupECatSdoParam(C_DRIVE_BUSID3, C_PDO_NUMBER, C_AXIS3_POLARITY, EPOS4_OP_CSP );
+	//sdkEpos4_SetupECatSdoParam(C_DRIVE_BUSID3, C_PDO_NUMBER, C_AXIS3_POLARITY, EPOS4_OP_CSP );
 
 	sdkEtherCATMasterDoMapping();
 
-	for (i = 1; i <= 3; i++) {
+	for (i = 1; i <= 2; i++) {
 	   sdkEtherCATSetupDC(i, C_EC_CYCLE_TIME, C_EC_OFFSET);    // Setup EtherCAT DC  (cycle_time [ms], offset [us]
     }
 
@@ -188,30 +184,30 @@ long main(void) {
 	{
 		retval.i[0] = 	sdkEpos4_AxisHomingStart(C_AXIS1, C_DRIVE_BUSID1, EPOS4_OP_CSP, homingStateAx_0);
 		retval.i[1] =  	sdkEpos4_AxisHomingStart(C_AXIS2, C_DRIVE_BUSID2, EPOS4_OP_CSP, homingStateAx_1);
-		retval.i[2] =  	sdkEpos4_AxisHomingStart(C_AXIS3, C_DRIVE_BUSID3, EPOS4_OP_CSP, homingStateAx_2);
+		//retval.i[2] =  	sdkEpos4_AxisHomingStart(C_AXIS3, C_DRIVE_BUSID3, EPOS4_OP_CSP, homingStateAx_2);
 	}
 
-	AxisControl(C_AXIS1,ON, C_AXIS2,ON,  C_AXIS3,ON);
+	AxisControl(C_AXIS1,ON, C_AXIS2,ON);
 
 	print("-----------------------------------------------------------");
 	print("                Movement in CSP Mode                       ");
 	print("----------------------------------------------------------- \n");
 
-	Vel(C_AXIS1, 40, C_AXIS2, 40, C_AXIS3, 40);
-	Acc(C_AXIS1, 30, C_AXIS2, 30, C_AXIS3, 30);
-	Dec(C_AXIS1, 30, C_AXIS2, 30, C_AXIS3, 30);
+	Vel(C_AXIS1, 40, C_AXIS2, 40);
+	Acc(C_AXIS1, 30, C_AXIS2, 30);
+	Dec(C_AXIS1, 30, C_AXIS2, 30);
 
 	for(i=10;i>=0;i--)
 	{
 		print("Start, move to target position");
-		AxisPosAbsStart( C_AXIS1, 20000 , C_AXIS2, 20000,   C_AXIS3, 20000 );
+		AxisPosAbsStart( C_AXIS1, 20000 , C_AXIS2, 20000 );
 
-		AxisWaitReached(C_AXIS1,C_AXIS2,C_AXIS3);
+		AxisWaitReached(C_AXIS1,C_AXIS2);
 		print("Target position is reached \n");
 		print("Start, back to start position");
 
-		AxisPosAbsStart( C_AXIS1, 0, C_AXIS2, 0, C_AXIS3, 0);
-		AxisWaitReached(C_AXIS1,C_AXIS2,C_AXIS3);
+		AxisPosAbsStart( C_AXIS1, 0, C_AXIS2, 0);
+		AxisWaitReached(C_AXIS1,C_AXIS2);
 		print("Start position is reached");
 		print(i, " repetitions to go \n");
 

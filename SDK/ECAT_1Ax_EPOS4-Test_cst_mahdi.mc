@@ -70,7 +70,7 @@ long main(void) {
 	long adcRawValue;
     double voltage;
 
-    long ActPosition, ActVelocity, ActTorque;
+    long ActPosition, ActVelocity, ActTorque, ActAvgCurrent;
 
 	print("-----------------------------------------------------------");
 	print(" Test application EtherCAT Master with 1 EPOS4 drive");
@@ -209,10 +209,14 @@ long main(void) {
         ActPosition = Sysvar[0x01606400];  // 0x01606400 is the correct SDO for actual position
         ActVelocity = Sysvar[0x01606C00];  // 0x01606400 is the correct SDO for actual velocity
         ActTorque = Sysvar[0x01607700];  // 0x01606400 is the correct SDO for actual torque
-        // Print the actual position
-        //print("Actual Position: ", ActPosition);
-        //print("Actual Velocity: ", ActVelocity);
+        // Print the actual values
+        print("Actual Position: ", ActPosition);
+        print("Actual Velocity: ", ActVelocity);
         print("Actual Torque: ", ActTorque);
+        //ActAvgCurrent = Sysvar[0x0130D101];  // 0x01606400 is the correct SDO for actual averaged current
+        // Sysvar[BUSMOD_PROCESS_INDEX(C_AXIS1,PO_BUSMOD_VALUE3)
+        ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0,3)];
+        print("Actual Averaged Current: ", ActAvgCurrent);
         // Delay for 1 ms
         Delay(10);  // Assuming Delay(1) causes a 20-millisecond delay
     }

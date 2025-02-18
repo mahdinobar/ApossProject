@@ -77,6 +77,9 @@ long sdkEpos4_SetupECatBusModule(long axis, long busId, long pdoNumber, long ope
     BUSMOD_PARAM(busmod, BUSMOD_RXMAP_POVALUE2) =  pdoNumber*0x01000000 + 4*0x00010000 + 2;   // pdo ; length in bytes; bytes offset   position actual value
     BUSMOD_PARAM(busmod, BUSMOD_RXMAP_POVALUE3) =  pdoNumber*0x01000000 + 4*0x00010000 + 6;   // pdo ; length in bytes; bytes offset   current actual value
 
+    //BUSMOD_PARAM(busmod, BUSMOD_RXMAP_POVALUE4) =  pdoNumber*0x01000000 + 4*0x00010000 + 10;   // pdo ; length in bytes; bytes offset   current actual value
+    //BUSMOD_PARAM(busmod, BUSMOD_RXMAP_POVALUE5) =  pdoNumber*0x01000000 + 4*0x00010000 + 14;   // pdo ; length in bytes; bytes offset   current actual value
+
     BUSMOD_PARAM(busmod, BUSMOD_MODE) = BUSMOD_MODE_ACTIVATE_NOSTOP;                    // Start bus module
 
     return(1);
@@ -216,11 +219,15 @@ long sdkEpos4_SetupECatSdoParam(long busId, long pdoNumber, long axisPolarity, l
     SdoWriten( busId, sm_TX, 0x00, 1, 0x00);		// disable entry
     SdoWriten( busId, sm_RX, 0x00, 1, 0x00);		// disable entry
 
-    SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 0, 1, 0);				// clear pdo 0x1a00 entries
-    SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 1, 4, 0x60410010);		// download pdo 0x1A00 entry: 	statusword
-    SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 2, 4, 0x60640020);		// download pdo 0x1A00 entry:  	actual position
-    SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 3, 4, 0x30D10120);		// download pdo 0x1A00 entry:  	Current actual value averaged [mA]  0x30D1 / 1    32bit
-    SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 0, 1, 3);				// download pdo 0x1A00 entry:	number of entries
+    SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 0, 1, 0);				// clear pdo 0x1a00 entries	//$B
+    SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 1, 4, 0x60410010);		// download pdo 0x1A00 entry: 	statusword	//$B
+    SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 2, 4, 0x60640020);		// download pdo 0x1A00 entry:  	actual position	//$B
+    SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 3, 4, 0x30D10120);		// download pdo 0x1A00 entry:  	Current actual value averaged [mA]  0x30D1 / 1    32bit	//$B
+    SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 0, 1, 3);				// download pdo 0x1A00 entry:	number of entries	//$B
+
+    //SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 4, 4, 0x606C0020);		// download pdo 0x1A00 entry:  	actual velocity	//$B
+    //SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 5, 4, 0x60770020);		// download pdo 0x1A00 entry:  	actual torque	//$B
+
 
     SdoWriten( busId, EPOS4_TRANSMIT_PDO_2_MAPPING, 0, 1, 0);				// clear pdo 0x1a01 entries
     SdoWriten( busId, EPOS4_TRANSMIT_PDO_3_MAPPING, 0, 1, 0);				// clear pdo 0x1a02 entries
@@ -570,11 +577,11 @@ long sdkEpos4_SetupCanSdoParam(long busId, long pdonumber, long axisPolarity, lo
     SdoWrite(busId, (EPOS4_RECEIVE_PDO_1_MAPPING + pdonumber - 1), 0x00, 2);     		// enable
 
     // config TX PDO
-    SdoWrite(busId, (EPOS4_TRANSMIT_PDO_1_MAPPING + pdonumber - 1), 0x00, 0);     		// disable
-    SdoWrite(busId, (EPOS4_TRANSMIT_PDO_1_MAPPING + pdonumber - 1), 0x01, 0x60410010);	// statusword
-    SdoWrite(busId, (EPOS4_TRANSMIT_PDO_1_MAPPING + pdonumber - 1), 0x02, 0x60640020);	// actpos
-    SdoWrite(busId, (EPOS4_TRANSMIT_PDO_1_MAPPING + pdonumber - 1), 0x03, 0x30D20110);	// Torque actual value averaged
-    SdoWrite(busId, (EPOS4_TRANSMIT_PDO_1_MAPPING + pdonumber - 1), 0x00, 3 );			// enable
+    SdoWrite(busId, (EPOS4_TRANSMIT_PDO_1_MAPPING + pdonumber - 1), 0x00, 0);     		// disable	//$B
+    SdoWrite(busId, (EPOS4_TRANSMIT_PDO_1_MAPPING + pdonumber - 1), 0x01, 0x60410010);	// statusword	//$B
+    SdoWrite(busId, (EPOS4_TRANSMIT_PDO_1_MAPPING + pdonumber - 1), 0x02, 0x60640020);	// actpos	//$B
+    SdoWrite(busId, (EPOS4_TRANSMIT_PDO_1_MAPPING + pdonumber - 1), 0x03, 0x30D20110);	// Torque actual value averaged	//$B
+    SdoWrite(busId, (EPOS4_TRANSMIT_PDO_1_MAPPING + pdonumber - 1), 0x00, 3 );			// enable	//$B
 
     // fill in the wanted pdo
     SdoWrite(busId, (EPOS4_TRANSMIT_PDO_1_PARAMETER + pdonumber - 1), 1, (0x80000180 + (pdonumber - 1)*0x100 + nodeid) );// fill in pdo

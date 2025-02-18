@@ -27,7 +27,7 @@
 #define C_AXIS2_POLARITY 	0
 
 #define C_DRIVE_BUSID1 1000001			// The driveBusId is 1000000 plus the EtherCAT slave position in the bus
-#define C_DRIVE_BUSID2 1000001			// The driveBusId is 1000000 plus the EtherCAT slave position in the bus
+#define C_DRIVE_BUSID2 1000002			// The driveBusId is 1000000 plus the EtherCAT slave position in the bus
 
 #define C_EC_CYCLE_TIME	1				// Cycletime in milliseconds
 #define C_EC_OFFSET		1				// Shift offset
@@ -66,15 +66,18 @@
 long main(void) {
 
     long slaveCount, i,retval, axisIndex;
-    long homingStateAx_0=0;
+    long homingStateAx_0=0,  homingStateAx_1=0;
 
     long status;
 	long masterStatus;
 	long adcRawValue;
     double voltage;
 
+    long ActPosition, ActVelocity, ActTorque, ActAvgCurrent;
+
+
 	print("-----------------------------------------------------------");
-	print(" Test application EtherCAT Master with 1 EPOS4 drive");
+	print(" Test application EtherCAT Master with 2 EPOS4 drive");
 	print("-----------------------------------------------------------");
 
 	ErrorClear();
@@ -117,6 +120,7 @@ long main(void) {
 	sdkEpos4_SetupECatVirtAmp(C_AXIS2, C_AXIS_MAX_RPM, EPOS4_OP_CST);
 
 	// setup irtual counter for cst mode
+	sdkEpos4_SetupECatVirtCntin(C_AXIS1, EPOS4_OP_CST);
 	sdkEpos4_SetupECatVirtCntin(C_AXIS2, EPOS4_OP_CST);
 	// Movement parameters for the axis
 	sdkSetupAxisMovementParam(	C_AXIS1,
@@ -210,6 +214,7 @@ long main(void) {
 
 	// Disable MACS trackerror for homing
 	AXE_PARAM(C_AXIS1,POSERR)=0;
+	AXE_PARAM(C_AXIS2,POSERR)=0;
 
 
 	// Homing statemachine
@@ -218,7 +223,7 @@ long main(void) {
 	while(retval!=2)
 	{
 		retval.i[0] = 	sdkEpos4_AxisHomingStart(C_AXIS1, C_DRIVE_BUSID1, EPOS4_OP_CST, homingStateAx_0);
-		retval.i[1] = 	sdkEpos4_AxisHomingStart(C_AXIS2, C_DRIVE_BUSID2, EPOS4_OP_CST, homingStateAx_0);
+		retval.i[1] = 	sdkEpos4_AxisHomingStart(C_AXIS2, C_DRIVE_BUSID2, EPOS4_OP_CST, homingStateAx_1);
 	}
 
 	AxisControl(C_AXIS1,ON, C_AXIS2,ON);
@@ -228,6 +233,9 @@ long main(void) {
 	print("                Set torque in CST Mode                       ");
 	print("----------------------------------------------------------- \n");
 
+	Vel(C_AXIS1, 40, C_AXIS2, 40);
+	Acc(C_AXIS1, 30, C_AXIS2, 30);
+	Dec(C_AXIS1, 30, C_AXIS2, 30);
 
 	status = ECatMasterInfo(0x1000, 0, masterStatus);  // Pass the variable, not the address
 	if (status == 0) {
@@ -235,6 +243,7 @@ long main(void) {
 		if (masterStatus == 0x08) {  // EC_STATE_OPERATIONAL
 			print("Master is operational.");
 		} else {
+			print("masterStatus=",masterStatus);
 			print("Master is not operational.");
 		}
 	} else {
@@ -251,7 +260,7 @@ long main(void) {
 
 		Delay(4000);
 		print("Set target torque for C_AXIS2 → negative");
-		AXE_PROCESS(C_AXIS2,REG_USERREFCUR)= -10;
+		AXE_PROCESS(C_AXIS2,REG_USERREFCUR)= -40;
 
 		Delay(4000);
 		print("Set target torque for both C_AXIS1 and C_AXIS2 → zero");
@@ -271,7 +280,45 @@ long main(void) {
 		print("Potentiometer ADC raw value for C_AXIS2: ", adcRawValue);
 		voltage = (adcRawValue * 10.0) / 4096.0;  // Convert to voltage
 		print("Potentiometer ADC Voltage for C_AXIS2: ", voltage, " V");
+
+		ActPosition = Sysvar[BUSMOD_PROCESS_INDEX(0, 2)];  // 0x01606400 is the correct SDO for actual position
+        print("Actual Position Axis 0: ", ActPosition);
+        ActPosition = Sysvar[BUSMOD_PROCESS_INDEX(1, 2)];  // 0x01606400 is the correct SDO for actual position
+        print("Actual Position Axis 1: ", ActPosition);
+
+
 	}
+
+
+	// Loop to send torque and print position every 1 ms
+    for (i = 0; i < 1000; i++) {  // Example loop to run for 1000 iterations
+        // Send motor rated torque (e.g., 1000 mNm)
+        AXE_PROCESS(C_AXIS1, REG_USERREFCUR) = 100;  // Set the torque (adjust value as needed)
+        // Retrieve the actual position (using Sysvar to read the actual position)
+        ActPosition = Sysvar[BUSMOD_PROCESS_INDEX(0, 2)];  // actual position
+        ActVelocity = Sysvar[BUSMOD_PROCESS_INDEX(0, 4)];  // actual velocity
+        ActTorque = Sysvar[BUSMOD_PROCESS_INDEX(0, 5)];  // actual torque
+        ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0, 3)];  // actual averaged current
+        print("Actual Position Axis 0: ", ActPosition);
+        print("Actual Velocity Axis 0: ", ActVelocity);
+        print("Actual Torque Axis 0: ", ActTorque);
+        print("Actual Average Current Axis 1: ", ActAvgCurrent);
+
+        // Send motor rated torque (e.g., 1000 mNm)
+        AXE_PROCESS(C_AXIS2, REG_USERREFCUR) = 100;  // Set the torque (adjust value as needed)
+        // Retrieve the actual position (using Sysvar to read the actual position)
+        ActPosition = Sysvar[BUSMOD_PROCESS_INDEX(1, 2)];  // actual position
+        ActVelocity = Sysvar[BUSMOD_PROCESS_INDEX(1, 4)];  // actual velocity
+        ActTorque = Sysvar[BUSMOD_PROCESS_INDEX(1, 5)];  // actual torque
+        ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(1, 3)];  // actual averaged current
+        print("Actual Position Axis 1: ", ActPosition);
+        print("Actual Velocity Axis 1: ", ActVelocity);
+        print("Actual Torque Axis 1: ", ActTorque);
+        print("Actual Average Current Axis 1: ", ActAvgCurrent);
+
+
+        Delay(20);
+    }
 
 	AxisControl(AXALL, OFF);
 

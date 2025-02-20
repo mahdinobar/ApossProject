@@ -24,7 +24,7 @@
 
 #define C_AXIS1_POLARITY 	0		// Definition of the polarity 0: Normal, 1: Inverse
 
-#define C_DRIVE_BUSID1 1000001			// The driveBusId is 1000000 plus the EtherCAT slave position in the bus	//$B
+#define C_DRIVE_BUSID1 1000001			// The driveBusId is 1000000 plus the EtherCAT slave position in the bus
 
 #define C_EC_CYCLE_TIME	1				// Cycletime in milliseconds
 #define C_EC_OFFSET		1				// Shift offset
@@ -66,7 +66,7 @@ long main(void) {
     long homingStateAx_0=0;
 
     long status;
-	long masterStatus;
+	long masterStatus;	//$B
 	long adcRawValue;
     double voltage;
     long slaveAddress;
@@ -92,7 +92,7 @@ long main(void) {
 	print("slavecount: ",slaveCount);
 
 	// initialising maxon drives
-	sdkEpos4_SetupECatSdoParam(C_DRIVE_BUSID1, C_PDO_NUMBER, C_AXIS1_POLARITY, EPOS4_OP_JPVT );	//$B
+	sdkEpos4_SetupECatSdoParam(C_DRIVE_BUSID1, C_PDO_NUMBER, C_AXIS1_POLARITY, EPOS4_OP_CSP );
 
 	sdkEtherCATMasterDoMapping();
 
@@ -104,13 +104,13 @@ long main(void) {
 	// All axis have in this example the same parameters
 
 	// setup EtherCAT bus module for cst mode
-	sdkEpos4_SetupECatBusModule(C_AXIS1, C_DRIVE_BUSID1, C_PDO_NUMBER, EPOS4_OP_JPVT);	//$B
+	sdkEpos4_SetupECatBusModule(C_AXIS1, C_DRIVE_BUSID1, C_PDO_NUMBER, EPOS4_OP_CSP);
 
 	// setup virtual amplifier for cst mode
-	sdkEpos4_SetupECatVirtAmp(C_AXIS1, C_AXIS_MAX_RPM, EPOS4_OP_JPVT);
+	sdkEpos4_SetupECatVirtAmp(C_AXIS1, C_AXIS_MAX_RPM, EPOS4_OP_CSP);
 
 	// setup irtual counter for cst mode
-	sdkEpos4_SetupECatVirtCntin(C_AXIS1, EPOS4_OP_JPVT);
+	sdkEpos4_SetupECatVirtCntin(C_AXIS1, EPOS4_OP_CSP);
 	// Movement parameters for the axis
 	sdkSetupAxisMovementParam(	C_AXIS1,
 								C_AXIS_VELRES,
@@ -155,42 +155,44 @@ long main(void) {
 	//----------------------------------------------------------------
 
 	// Homing setup
-	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOMING_METHOD, 						0,   EPOS4_HOMING_ACT_POSITION);	// 0x6098 Set homing method to “-4" : Homing Method -4 (Current Threshold Negative Speed).”	//$B
-	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOMING_SPEEDS, 						1,   20);    						// Homing Speed / Speed for switch speed [velocity units]	//$B
-	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOMING_SPEEDS, 						2,   20);    						// Homing Speed / Speed for zero search [velocity units]	//$B
-	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOMING_ACCELERATION, 				0,   20);    						// Homing acceleration [acceleration units]	//$B
-	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOME_OFFSET_MOVE_DISTANCE, 			0,   6400);   						// Home offset move distance [position units]	//$B
-	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOME_POSITION, 						0,   0);   							// Home position [position units]	//$B
-	SdoWrite( C_DRIVE_BUSID1, EPOS4_CURRENT_THRESHOLD_FOR_HOMING_MODE, 	0,   1500);  						// Current threshold for homing mode [mA]	//$B
+	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOMING_METHOD, 						0,   EPOS4_HOMING_ACT_POSITION);	// 0x6098 Set homing method to “-4" : Homing Method -4 (Current Threshold Negative Speed).”
+	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOMING_SPEEDS, 						1,   20);    						// Homing Speed / Speed for switch speed [velocity units]
+	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOMING_SPEEDS, 						2,   20);    						// Homing Speed / Speed for zero search [velocity units]
+	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOMING_ACCELERATION, 				0,   20);    						// Homing acceleration [acceleration units]
+	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOME_OFFSET_MOVE_DISTANCE, 			0,   6400);   						// Home offset move distance [position units]
+	SdoWrite( C_DRIVE_BUSID1, EPOS4_HOME_POSITION, 						0,   0);   							// Home position [position units]
+	SdoWrite( C_DRIVE_BUSID1, EPOS4_CURRENT_THRESHOLD_FOR_HOMING_MODE, 	0,   1500);  						// Current threshold for homing mode [mA]
 
-	print("...: EPOS4 Homing AxisNo: ",C_AXIS1," - Homing methode: ",SdoRead(C_DRIVE_BUSID1, EPOS4_HOMING_METHOD,0));	//$B
+	print("...: EPOS4 Homing AxisNo: ",C_AXIS1," - Homing methode: ",SdoRead(C_DRIVE_BUSID1, EPOS4_HOMING_METHOD,0));
 
 	// Disable MACS trackerror for homing
-	AXE_PARAM(C_AXIS1,POSERR)=0;
+	//AXE_PARAM(C_AXIS1,POSERR)=0;
 
 
-	// Homing statemachine
-	retval=0;
-
-	while(retval!=1)
-	{
-		retval.i[0] = 	sdkEpos4_AxisHomingStart(C_AXIS1, C_DRIVE_BUSID1, EPOS4_OP_JPVT, homingStateAx_0);	//$B
-	}
+	//// Homing statemachine
+	//retval=0;
+	//while(retval!=1)
+	//{
+	//	retval.i[0] = 	sdkEpos4_AxisHomingStart(C_AXIS1, C_DRIVE_BUSID1, EPOS4_OP_CSP, homingStateAx_0);
+	//}
 
 	AxisControl(C_AXIS1,ON);
 
 	print("");
 	print("-----------------------------------------------------------");
-	print("                Set torque in CST Mode                       ");
+	print("                Set torque in JPVT Mode                    ");
 	print("----------------------------------------------------------- \n");
 
 	AxisControl(C_AXIS1, ON);
 
+	Vel(C_AXIS1, 50);
+	Acc(C_AXIS1, 30);
+	Dec(C_AXIS1, 30);
 
-	status = ECatMasterInfo(0x1000, 0, masterStatus);  // Pass the variable, not the address
+	status = ECatMasterInfo(0x1000, 0, masterStatus);  // Pass the variable, not the address	//$B
 	if (status == 0) {
-		print("EtherCAT master status: ", masterStatus);
-		if (masterStatus == 0x08) {  // EC_STATE_OPERATIONAL
+		print("EtherCAT master status: ", masterStatus);	//$B
+		if (masterStatus == 0x08) {  // EC_STATE_OPERATIONAL	//$B
 			print("Master is operational.");
 		} else {
 			print("Master is not operational.");
@@ -201,9 +203,20 @@ long main(void) {
 
 
 	// Loop to send torque and print position every 1 ms
-    for (i = 0; i < 1000; i++) {  // Example loop to run for 1000 iterations
+    for (i = 0; i < 20; i++) {  // Example loop to run for 1000 iterations
         // Send motor rated torque (e.g., 1000 mNm)
-        AXE_PROCESS(C_AXIS1, REG_USERREFCUR) = 100;  // Set the torque (adjust value as needed)
+        //AXE_PROCESS(C_AXIS1, REG_USERREFCUR) = 100;  // Set the torque (adjust value as needed)
+        AxisPosAbsStart(C_AXIS1, 1000);
+
+       	AxisWaitReached(C_AXIS1);
+		print("Target position is reached \n");
+		print("Start, back to start position");
+
+		AxisPosAbsStart( C_AXIS1, 0);
+		AxisWaitReached(C_AXIS1);
+		print("Start position is reached");
+		print(i, " repetitions to go \n");
+
         // Retrieve the actual position (using Sysvar to read the actual position)
         ActPosition = Sysvar[0x01606400];  // 0x01606400 is the correct SDO for actual position
         ActVelocity = Sysvar[0x01606C00];  // 0x01606400 is the correct SDO for actual velocity
@@ -218,7 +231,7 @@ long main(void) {
         ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0,3)];
         print("Actual Averaged Current: ", ActAvgCurrent);
         // Delay for 1 ms
-        Delay(10);  // Assuming Delay(1) causes a 20-millisecond delay
+        Delay(100);  // Assuming Delay(1) causes a 20-millisecond delay
     }
 
 
@@ -248,7 +261,7 @@ void ErrorHandler(void)
 
   	switch(errNbr)
 	{
-		case F_AMP:		eposErr = SdoRead(C_DRIVE_BUSID1,EPOS4_ERROR_CODE,0x00);	//$B
+		case F_AMP:		eposErr = SdoRead(C_DRIVE_BUSID1,EPOS4_ERROR_CODE,0x00);
 						printf("Error Axis: %d, Epos4 Error 0x%lX: ", axeNbr , eposErr);
 						sdkEpos4_PrintErrorDescription(eposErr);
 						print();

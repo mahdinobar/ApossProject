@@ -262,12 +262,12 @@ long main(void) {
 		print("Set target torque for C_AXIS2 → negative");
 		AXE_PROCESS(C_AXIS2,REG_USERREFCUR)= -40;
 
-		Delay(4000);
+		Delay(3000);
 		print("Set target torque for both C_AXIS1 and C_AXIS2 → zero");
 		AXE_PROCESS(C_AXIS1,REG_USERREFCUR)= 0;
 		AXE_PROCESS(C_AXIS2,REG_USERREFCUR)= 0;
 
-		Delay(4000);
+		Delay(3000);
 		print(i, " repetitions to go \n");
 
 		adcRawValue = SdoRead(C_DRIVE_BUSID1, EPOS4_ACTUAL_ANALOG_INPUT, 1);
@@ -291,7 +291,7 @@ long main(void) {
 
 
 	// Loop to send torque and print position every 1 ms
-    for (i = 0; i < 1000; i++) {  // Example loop to run for 1000 iterations
+    for (i = 0; i < 500; i++) {  // Example loop to run for 1000 iterations
         // Send motor rated torque (e.g., 1000 mNm)
         AXE_PROCESS(C_AXIS1, REG_USERREFCUR) = 100;  // Set the torque (adjust value as needed)
         // Retrieve the actual position (using Sysvar to read the actual position)
@@ -317,7 +317,7 @@ long main(void) {
         print("Actual Average Current Axis 1: ", ActAvgCurrent);
 
 
-        Delay(20);
+        Delay(10);
     }
 
 	AxisControl(AXALL, OFF);

@@ -86,6 +86,8 @@ long sdkEpos4_SetupECatBusModule(long axis, long busId, long pdoNumber, long ope
     BUSMOD_PARAM(busmod, BUSMOD_RXMAP_POVALUE5) =  pdoNumber*0x01000000 + 4*0x00010000 + 12;   // pdo ; length in bytes; bytes offset   torque actual value
     BUSMOD_PARAM(busmod, BUSMOD_RXMAP_POVALUE6) =  pdoNumber*0x01000000 + 4*0x00010000 + 14;   // pdo ; length in bytes; bytes offset   joint velocity actual value
 
+    //BUSMOD_PARAM(busmod, BUSMOD_RXMAP_POVALUE7) =  pdoNumber*0x01000000 + 4*0x00010000 + 15;   // pdo ; length in bytes; bytes offset   position controller P gain
+
     BUSMOD_PARAM(busmod, BUSMOD_MODE) = BUSMOD_MODE_ACTIVATE_NOSTOP;                    // Start bus module
 
     return(1);
@@ -238,6 +240,8 @@ long sdkEpos4_SetupECatSdoParam(long busId, long pdoNumber, long axisPolarity, l
     SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 4, 4, 0x606C0020);		// download pdo 0x1A00 entry:  	actual velocity
     SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 5, 4, 0x60770010);		// download pdo 0x1A00 entry:  	actual torque
     SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 6, 4, 0x34CA0020);		// download pdo 0x1A00 entry:  	joint actual velocity (for JPVT) 32 bits
+    //SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 7, 4, 0x30A10110);		// download pdo 0x1A00 entry:  	P gain position controller
+
     SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 0, 1, 6);				// download pdo 0x1A00 entry:	number of entries
 
 

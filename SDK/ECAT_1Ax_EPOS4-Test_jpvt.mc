@@ -71,7 +71,10 @@ long main(void) {
     double voltage;
     long slaveAddress;
 
-    long ActPosition, ActVelocity, ActTorque, ActAvgCurrent, ActJointVelocity;
+	long resval;
+	long pGain;
+
+    long ActPosition, ActVelocity, ActTorque, ActAvgCurrent, ActJointVelocity, PosPgain;
 
 	print("-----------------------------------------------------------");
 	print(" Test application EtherCAT Master with 1 EPOS4 drive");
@@ -92,7 +95,7 @@ long main(void) {
 	print("slavecount: ",slaveCount);
 
 	// initialising maxon drives
-	sdkEpos4_SetupECatSdoParam(C_DRIVE_BUSID1, C_PDO_NUMBER, C_AXIS1_POLARITY, EPOS4_OP_CSP );
+	sdkEpos4_SetupECatSdoParam(C_DRIVE_BUSID1, C_PDO_NUMBER, C_AXIS1_POLARITY, EPOS4_OP_JPVT );
 
 	sdkEtherCATMasterDoMapping();
 
@@ -104,13 +107,13 @@ long main(void) {
 	// All axis have in this example the same parameters
 
 	// setup EtherCAT bus module for cst mode
-	sdkEpos4_SetupECatBusModule(C_AXIS1, C_DRIVE_BUSID1, C_PDO_NUMBER, EPOS4_OP_CSP);
+	sdkEpos4_SetupECatBusModule(C_AXIS1, C_DRIVE_BUSID1, C_PDO_NUMBER, EPOS4_OP_JPVT);
 
 	// setup virtual amplifier for cst mode
-	sdkEpos4_SetupECatVirtAmp(C_AXIS1, C_AXIS_MAX_RPM, EPOS4_OP_CSP);
+	sdkEpos4_SetupECatVirtAmp(C_AXIS1, C_AXIS_MAX_RPM, EPOS4_OP_JPVT);
 
 	// setup irtual counter for cst mode
-	sdkEpos4_SetupECatVirtCntin(C_AXIS1, EPOS4_OP_CSP);
+	sdkEpos4_SetupECatVirtCntin(C_AXIS1, EPOS4_OP_JPVT);
 	// Movement parameters for the axis
 	sdkSetupAxisMovementParam(	C_AXIS1,
 								C_AXIS_VELRES,
@@ -173,7 +176,7 @@ long main(void) {
 	//retval=0;
 	//while(retval!=1)
 	//{
-	//	retval.i[0] = 	sdkEpos4_AxisHomingStart(C_AXIS1, C_DRIVE_BUSID1, EPOS4_OP_CSP, homingStateAx_0);
+	//	retval.i[0] = 	sdkEpos4_AxisHomingStart(C_AXIS1, C_DRIVE_BUSID1, EPOS4_OP_JPVT, homingStateAx_0);
 	//}
 
 	AxisControl(C_AXIS1,ON);
@@ -207,7 +210,6 @@ long main(void) {
         // Send motor rated torque (e.g., 1000 mNm)
         //AXE_PROCESS(C_AXIS1, REG_USERREFCUR) = 100;  // Set the torque (adjust value as needed)
         AxisPosAbsStart(C_AXIS1, 1000);
-
        	AxisWaitReached(C_AXIS1);
 		print("Target position is reached \n");
 		print("Start, back to start position");
@@ -222,6 +224,141 @@ long main(void) {
         ActVelocity = Sysvar[0x01606C00];  // 0x01606400 is the correct SDO for actual velocity
         ActJointVelocity = Sysvar[0x0134CA00];  // 0x01606400 is the correct SDO for actual velocity
         ActTorque = Sysvar[0x01607700];  // 0x01606400 is the correct SDO for actual torque
+        //PosPgain = Sysvar[0x0130A101];  // 0x01606400 is the correct SDO for position controller P gain
+        //print("PosPgain=",PosPgain);
+
+        //resval = SdoRead(C_DRIVE_BUSID1, 0x30A1, 0x01);
+		//print("resval=",resval);
+		resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x01);
+		SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 55);
+		print("JPVTC controller P gain=",resval);
+		SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, 2);
+		resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x03);
+		print("JPVTC controller D gain=",resval);
+		resval = SdoRead(C_DRIVE_BUSID1, 0x6040, 0x00);
+		print("Controlword=",resval);
+		//SdoWrite(C_DRIVE_BUSID1, 0x3000, 0x02, 68309521);
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3000, 0x02);
+		print("Control structure=",resval);
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3001, 0x03);
+		print("Number of pole pairs=",resval);
+
+
+		//SdoWrite(C_DRIVE_BUSID1, 0x607A, 0x00, 500);
+		//SdoWrite(C_DRIVE_BUSID1, 0x30AE, 0x01, 30);
+		//SdoWrite(C_DRIVE_BUSID1, 0x30A0, 0x01, 3000);
+		//SdoWrite(C_DRIVE_BUSID1, 0x30A0, 0x02, 7000);
+		//SdoWrite(C_DRIVE_BUSID1, 0x30AE, 0x02, 30);
+
+		print("+++++++++++++++++++++++++++++++++++++++++++++");
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3000, 0x02);
+		print("Control structure=", resval);
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3001, 0x03);
+		print("Number of pole pairs=", resval);
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3001, 0x04);
+		print("Thermal time constant winding=", resval, " s");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3001, 0x05);
+		print("Torque constant=", resval, " mN/mA");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3003, 0x01);
+		print("Gear reduction numerator=", resval);
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3003, 0x02);
+		print("Gear reduction denominator=", resval);
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3003, 0x03);
+		print("Max gear input speed=", resval, " rpm");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3010, 0x01);
+		print("Digital incremental encoder 1 number of pulses=", resval, " pulses/rev");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3012, 0x02);
+		print("SSI number of data bits=", resval);
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3012, 0x03);
+		print("SSI encoding type=", resval);
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x3012, 0x05);
+		print("SSI timeout time=", resval, " us");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30A0, 0x01);
+		print("Current controller P gain=", resval, " mV/A");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30A0, 0x02);
+		print("Current controller I gain=", resval, " mV/(A*ms)");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30A1, 0x01);
+		print("Position controller P gain=", resval, " mA/rad");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30A1, 0x02);
+		print("Position controller I gain=", resval, " mA/(rad*s)");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30A1, 0x03);
+		print("Position controller D gain=", resval, " mA*s/rad");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30A2, 0x01);
+		print("Velocity controller P gain=", resval, " mA*s/rad");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30A2, 0x02);
+		print("Velocity controller I gain=", resval, " mA/rad");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30A2, 0x05);
+		print("Velocity controller filter cut-off frequency=", resval, " Hz");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x01);
+		print("Main loop P gain low bandwidth=", resval, " 1/s");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x02);
+		print("Main loop P gain high bandwidth=", resval, " 1/s");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x20);
+		print("Auxiliary loop P gain=", resval, " mA*s/rad");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x21);
+		print("Auxiliary loop I gain=", resval, " mA/rad");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x30);
+		print("Auxiliary loop observer position correction gain=", resval);
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x31);
+		print("Auxiliary loop observer velocity correction gain=", resval, " Hz");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x32);
+		print("Auxiliary loop observer load correction gain=", resval, " mNm/rad");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x33);
+		print("Auxiliary loop observer friction=", resval, " uNm/rad");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x34);
+		print("Auxiliary loop observer inertia=", resval, " g*cm^2");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x607F, 0x00);
+		print("Max profile velocity=", resval, " mrpm");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x6080, 0x00);
+		print("Max motor speed=", resval, " rpm");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x6081, 0x00);
+		print("Profile velocity=", resval, " mrpm");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x6083, 0x00);
+		print("Profile acceleration=", resval, " rpm/s");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x6084, 0x00);
+		print("Profile deceleration=", resval, " rpm/s");
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x60A9, 0x00);
+		print("SI unit velocity=", resval);
+
+		resval = SdoRead(C_DRIVE_BUSID1, 0x6060, 0x00);
+		print("Modes of operation=", resval);
+		print("------------------------------------------");
+
+
+
         // Print the actual values
         print("Actual Position: ", ActPosition);
         print("Actual Velocity: ", ActVelocity);

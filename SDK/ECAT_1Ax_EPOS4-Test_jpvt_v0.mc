@@ -109,7 +109,7 @@ long main(void) {
 	// All axis have in this example the same parameters
 
 	// setup EtherCAT bus module for cst mode
-	sdkEpos4_SetupECatBusModule(C_AXIS1, C_DRIVE_BUSID1, C_PDO_NUMBER, EPOS4_OP_JPVT);
+	sdkEpos4_SetupECatBusModule(C_AXIS1, C_DRIVE_BUSID1, C_PDO_NUMBER, EPOS4_OP_JPVT, pos_target);
 
 	// setup virtual amplifier for cst mode
 	sdkEpos4_SetupECatVirtAmp(C_AXIS1, C_AXIS_MAX_RPM, EPOS4_OP_JPVT);
@@ -213,21 +213,19 @@ long main(void) {
 	//ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0,3)];
 	//#define BUSMOD_PROCESS_INDEX(modno,parno)           ((0x01000000 | (SDOINDEX_BUSMOD_PROCESS<<8)) | (((long) (modno))<<8) | ((long) (parno)))
 
-	RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00);
-	RecordStart(0); // Start recording (until RecordStop or DYNMEM is filled up)
-
 	print("00000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 8000);
 	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x01);
 	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, 4000);
 	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x03);
 	//SdoWrite(C_DRIVE_BUSID1, 0x607A, 0x00, 0);
+	USER_PARAM(pos_target) = 0;
 	resval = SdoRead(C_DRIVE_BUSID1, 0x607A, 0x00);
 	print(">>>>>>> go to position=",resval);
 	Sysvar[0x01607A00]=0;
 	//resval = Sysvar[0x01607A00];
 	//print("!!!!!!!!!!!!!! go to position2=",resval);
-	Delay(2000);
+	//Delay(2000);
 	ActPosition = Sysvar[0x01606400];  // 0x01606400 is the correct SDO for actual position
 	ActVelocity = Sysvar[0x01606C00];  // 0x01606400 is the correct SDO for actual velocity
 	ActJointVelocity = Sysvar[0x0134CA00];  // 0x01606400 is the correct SDO for actual joint velocity
@@ -238,13 +236,18 @@ long main(void) {
 	ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0,3)];
 	print("Actual Averaged Current: ", ActAvgCurrent);
 	print("00000000000000000000000000000000000000000000000000000000000000000000000000000000");
-	Delay(1000);
+	Delay(2000);
 
 
-	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 80000);
+
+	RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));
+	RecordStart(0); // Start recording (until RecordStop or DYNMEM is filled up)
+	Delay(100);
+
+	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 50000);
 	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x01);
 	print("JPVTC controller P gain=",resval);
-	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, 4000);
+	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, 2000);
 	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x03);
 	print("JPVTC controller D gain=",resval);
 
@@ -275,7 +278,7 @@ long main(void) {
 	//AxisPosAbsStart(0, 0); // Use new velocity for moving back
 	//AxisWaitReached(0); // Wait until position is reached
 
-	Delay(1000); // Wait 200ms
+	Delay(900); // Wait 200ms
 	//RecordStop(0, 0); // Stop recording
 
 

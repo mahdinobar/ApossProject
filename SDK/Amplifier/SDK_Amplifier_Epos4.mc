@@ -34,7 +34,7 @@
 *
 */
 
-long sdkEpos4_SetupECatBusModule(long axis, long busId, long pdoNumber, long operationMode)
+long sdkEpos4_SetupECatBusModule(long axis, long busId, long pdoNumber, long operationMode, long pos_target)
 {
 	long busmod, slaveNo;
 
@@ -66,7 +66,7 @@ long sdkEpos4_SetupECatBusModule(long axis, long busId, long pdoNumber, long ope
     }
     else if (operationMode == EPOS4_OP_JPVT)	// jpvt mode
     {
-    	BUSMOD_PARAM(busmod, BUSMOD_PISRC_INPUT2) =  AXE_PROCESS_SRCINDEX(axis,PO_VIRTAMP_REFPOS);	// Select the input value sources object (send to bus): target torque
+    	BUSMOD_PARAM(busmod, BUSMOD_PISRC_INPUT2) = USER_PARAM_INDEX(pos_target);//AXE_PROCESS_SRCINDEX(axis,PO_VIRTAMP_REFPOS);	// Select the input value sources object (send to bus): target torque
     	print("...: jpvt mode");
     }
     else	// Error
@@ -87,6 +87,7 @@ long sdkEpos4_SetupECatBusModule(long axis, long busId, long pdoNumber, long ope
     BUSMOD_PARAM(busmod, BUSMOD_RXMAP_POVALUE6) =  pdoNumber*0x01000000 + 4*0x00010000 + 14;   // pdo ; length in bytes; bytes offset   joint velocity actual value
 
     //BUSMOD_PARAM(busmod, BUSMOD_RXMAP_POVALUE7) =  pdoNumber*0x01000000 + 4*0x00010000 + 15;   // pdo ; length in bytes; bytes offset   position controller P gain
+    //BUSMOD_PARAM(busmod, BUSMOD_RXMAP_POVALUE7) =  pdoNumber*0x01000000 + 4*0x00010000 + 16;   // pdo ; length in bytes; bytes offset   target position
 
     BUSMOD_PARAM(busmod, BUSMOD_MODE) = BUSMOD_MODE_ACTIVATE_NOSTOP;                    // Start bus module
 
@@ -150,7 +151,7 @@ long sdkEpos4_SetupECatVirtAmp(long axis, long maxRpm, long operationMode)
     	VIRTAMP_PARAM(axis,VIRTAMP_REFLIMIT)         = 0;  // not used in cst
     	print("...: cycle synchronous torque (cst) mode");
     }
-        else if (operationMode == EPOS4_OP_JPVT)	// jpvt mode
+    else if (operationMode == EPOS4_OP_JPVT)	// jpvt mode
     {
     	VIRTAMP_PARAM(axis,VIRTAMP_REF100PERC)       = 0;  // not used in jpvt?
     	VIRTAMP_PARAM(axis,VIRTAMP_REFLIMIT)         = 0;  // not used in jpvt?
@@ -198,6 +199,11 @@ long sdkEpos4_SetupECatVirtCntin(long axis, long operationMode)
     	VIRTCOUNTIN_PARAM(axis,VIRTCNTIN_MODE) = VIRTCNTIN_MODE_ABSOLUTE;   		// Source is a position value and difference to last value is added
     	print("...: cycle synchronous velocity (csv) mode");
     }
+    else if (operationMode==EPOS4_OP_JPVT)	// cycle synchronous velocity (csv) mode
+    {
+    	VIRTCOUNTIN_PARAM(axis,VIRTCNTIN_MODE) = VIRTCNTIN_MODE_ABSOLUTE;   		//
+    	print("...: jpvt mode");
+    }
     else											// Error
     {
     	print("...: not supported operation mode");
@@ -241,6 +247,7 @@ long sdkEpos4_SetupECatSdoParam(long busId, long pdoNumber, long axisPolarity, l
     SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 5, 4, 0x60770010);		// download pdo 0x1A00 entry:  	actual torque
     SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 6, 4, 0x34CA0020);		// download pdo 0x1A00 entry:  	joint actual velocity (for JPVT) 32 bits
     //SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 7, 4, 0x30A10110);		// download pdo 0x1A00 entry:  	P gain position controller
+    //SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 7, 4, 0x60640020);		// download pdo 0x1A00 entry:  	target position
 
     SdoWriten( busId, EPOS4_TRANSMIT_PDO_1_MAPPING, 0, 1, 6);				// download pdo 0x1A00 entry:	number of entries
 
@@ -265,7 +272,7 @@ long sdkEpos4_SetupECatSdoParam(long busId, long pdoNumber, long axisPolarity, l
 		SdoWriten(busId, (EPOS4_RECEIVE_PDO_1_MAPPING), 2, 4, 0x60710010);  	// download pdo 0x1600 entry: Target torque 16bit
     }
     else if (operationMode == EPOS4_OP_JPVT) {
-		SdoWriten(busId, (EPOS4_RECEIVE_PDO_1_MAPPING), 2, 4, 0x607A0020);  	// download pdo 0x1600 entry: Target torque 32bit
+		SdoWriten(busId, EPOS4_RECEIVE_PDO_1_MAPPING, 2, 4, 0x607A0020);  	// download pdo 0x1600 entry: Target position 32bit
     }
 
     SdoWriten( busId, EPOS4_RECEIVE_PDO_1_MAPPING, 0, 1, 2);				// download pdo 0x1600 entry:	number of entries

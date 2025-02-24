@@ -8,7 +8,7 @@
 #pragma once
 
 // Declaration of the functions
-long sdkEpos4_SetupECatBusModule(long axis, long busId, long pdoNumber, long operationMode);
+long sdkEpos4_SetupECatBusModule(long axis, long busId, long pdoNumber, long operationMode, long pos_target);
 long sdkEpos4_SetupECatVirtAmp(long axis, long maxRpm, long operationMode);
 long sdkEpos4_SetupECatVirtCntin(long axis, long operationMode);
 long sdkEpos4_SetupECatSdoParam(long busId, long pdoNumber, long axisPolarity, long operationMode);

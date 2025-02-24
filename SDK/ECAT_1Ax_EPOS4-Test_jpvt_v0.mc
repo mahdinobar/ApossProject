@@ -59,6 +59,7 @@
 #define	C_AXIS_KFFAC			0
 #define	C_AXIS_KFFDEC			0
 
+#define pos_target			2
 
 long main(void) {
 
@@ -66,7 +67,7 @@ long main(void) {
     long homingStateAx_0=0;
 
     long status;
-	long masterStatus;	//$B
+	long masterStatus;
 	long adcRawValue;
     double voltage;
     long slaveAddress;
@@ -75,6 +76,7 @@ long main(void) {
 	long pGain;
 
     long ActPosition, ActVelocity, ActTorque, ActAvgCurrent, ActJointVelocity, PosPgain;
+    long positionLog[1000];
 
 	print("-----------------------------------------------------------");
 	print(" Test application EtherCAT Master with 1 EPOS4 drive");
@@ -192,10 +194,10 @@ long main(void) {
 	Acc(C_AXIS1, 30);
 	Dec(C_AXIS1, 30);
 
-	status = ECatMasterInfo(0x1000, 0, masterStatus);  // Pass the variable, not the address	//$B
+	status = ECatMasterInfo(0x1000, 0, masterStatus);  // Pass the variable, not the address
 	if (status == 0) {
-		print("EtherCAT master status: ", masterStatus);	//$B
-		if (masterStatus == 0x08) {  // EC_STATE_OPERATIONAL	//$B
+		print("EtherCAT master status: ", masterStatus);
+		if (masterStatus == 0x08) {  // EC_STATE_OPERATIONAL
 			print("Master is operational.");
 		} else {
 			print("Master is not operational.");
@@ -204,177 +206,149 @@ long main(void) {
 		print("Error: Unable to retrieve EtherCAT master status.");
 	}
 
+	USER_PARAM(pos_target) = 0;
+	//#define USER_PARAM(parno)                           Sysvar[USER_PARAM_INDEX(parno)]
+
+	//ActPosition = Sysvar[0x01606400];
+	//ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0,3)];
+	//#define BUSMOD_PROCESS_INDEX(modno,parno)           ((0x01000000 | (SDOINDEX_BUSMOD_PROCESS<<8)) | (((long) (modno))<<8) | ((long) (parno)))
+
+	RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00);
+	RecordStart(0); // Start recording (until RecordStop or DYNMEM is filled up)
+
+	print("00000000000000000000000000000000000000000000000000000000000000000000000000000000");
+	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 8000);
+	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x01);
+	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, 4000);
+	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x03);
+	//SdoWrite(C_DRIVE_BUSID1, 0x607A, 0x00, 0);
+	resval = SdoRead(C_DRIVE_BUSID1, 0x607A, 0x00);
+	print(">>>>>>> go to position=",resval);
+	Sysvar[0x01607A00]=0;
+	//resval = Sysvar[0x01607A00];
+	//print("!!!!!!!!!!!!!! go to position2=",resval);
+	Delay(2000);
+	ActPosition = Sysvar[0x01606400];  // 0x01606400 is the correct SDO for actual position
+	ActVelocity = Sysvar[0x01606C00];  // 0x01606400 is the correct SDO for actual velocity
+	ActJointVelocity = Sysvar[0x0134CA00];  // 0x01606400 is the correct SDO for actual joint velocity
+	ActTorque = Sysvar[0x01607700];  // 0x01606400 is the correct SDO for actual torque
+	print("Actual Position: ", ActPosition);
+	print("Actual Velocity: ", ActVelocity);
+	print("Actual Torque: ", ActTorque);
+	ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0,3)];
+	print("Actual Averaged Current: ", ActAvgCurrent);
+	print("00000000000000000000000000000000000000000000000000000000000000000000000000000000");
+	Delay(1000);
+
+
+	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 80000);
+	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x01);
+	print("JPVTC controller P gain=",resval);
+	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, 4000);
+	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x03);
+	print("JPVTC controller D gain=",resval);
+
+	// Configure system objects for recording:
+	// Actual position, Command position, Tracking Error, system timer
+	//RecordIndex(0x01250001, 0x01250002, 0x01250006, 0x01220217, 0x01606400);
+
+	//AxisPosAbsStart(C_AXIS1, 500);
+	//AxisPosRelStart(C_AXIS1, 500);
+	//SdoWrite(C_DRIVE_BUSID1, 0x607A, 0x00, 500); //set Target position
+	USER_PARAM(pos_target) = 500;
+	resval = SdoRead(C_DRIVE_BUSID1, 0x607A, 0x00);
+	print("resval=",resval);
+
+	//Sysvar[0x01607A00]=500;
+	//resval = Sysvar[0x01607A00];
+	//print("resval2=",resval);
+
+	print("++++++++++++++++++++++++++++++++++++++++ Target position is set=",resval);
+	//AxisWaitReached(C_AXIS1);
+	//Delay(3000);
+	//Sysvar[0x01607A00]=500;
+	//SdoWriten(C_DRIVE_BUSID1, 0x1600, 2, 4, 0x607A0020);
+	//Vel(0, 50); // 50% of maximum velocity
+	//AxisPosAbsStart(0, 500); // Start positioning
+	//AxisWaitReached(0); // Wait until position is reached
+	//Vel(0, 100); // Increase velocity to 100%
+	//AxisPosAbsStart(0, 0); // Use new velocity for moving back
+	//AxisWaitReached(0); // Wait until position is reached
+
+	Delay(1000); // Wait 200ms
+	//RecordStop(0, 0); // Stop recording
+
+
 
 	// Loop to send torque and print position every 1 ms
-    for (i = 0; i < 20; i++) {  // Example loop to run for 1000 iterations
+    for (i = 0; i < 0; i++) {  // Example loop to run for 1000 iterations
         // Send motor rated torque (e.g., 1000 mNm)
         //AXE_PROCESS(C_AXIS1, REG_USERREFCUR) = 100;  // Set the torque (adjust value as needed)
-        AxisPosAbsStart(C_AXIS1, 2000);
-       	AxisWaitReached(C_AXIS1);
-		print("Target position is reached \n");
-		print("Start, back to start position");
+        //AxisPosRelStart(C_AXIS1, 2000);
+       	//AxisWaitReached(C_AXIS1);
+		//print("Target position is reached \n");
+		//print("Start, back to start position");
 
-		AxisPosAbsStart( C_AXIS1, 0);
-		AxisWaitReached(C_AXIS1);
-		print("Start position is reached");
+		//AxisPosAbsStart(C_AXIS1, 500);
+		//AxisPosAbsStart( C_AXIS1, 0);
+		//AxisWaitReached(C_AXIS1);
+		//print("Start position is reached");
 		print(i, " repetitions to go \n");
+		//SdoWrite(C_DRIVE_BUSID1, 0x607A, 0x00, 500); //set Target position
+		resval = SdoRead(C_DRIVE_BUSID1, 0x607A, 0x00);
+		print("resval=",resval);
 
-        // Retrieve the actual position (using Sysvar to read the actual position)
-        ActPosition = Sysvar[0x01606400];  // 0x01606400 is the correct SDO for actual position
-        ActVelocity = Sysvar[0x01606C00];  // 0x01606400 is the correct SDO for actual velocity
-        ActJointVelocity = Sysvar[0x0134CA00];  // 0x01606400 is the correct SDO for actual velocity
-        ActTorque = Sysvar[0x01607700];  // 0x01606400 is the correct SDO for actual torque
-        //PosPgain = Sysvar[0x0130A101];  // 0x01606400 is the correct SDO for position controller P gain
-        //print("PosPgain=",PosPgain);
+		//Sysvar[0x01607A00]=500;
+		resval = Sysvar[0x01607A00];
+		print("resval2=",resval);
+
 
         //resval = SdoRead(C_DRIVE_BUSID1, 0x30A1, 0x01);
 		//print("resval=",resval);
-		resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x01);
-		SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 55000);
-		print("JPVTC controller P gain=",resval);
-		SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, 2000);
-		resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x03);
-		print("JPVTC controller D gain=",resval);
 
-		resval = SdoRead(C_DRIVE_BUSID1, 0x6040, 0x00);
-		print("Controlword=",resval);
+
+		//resval = SdoRead(C_DRIVE_BUSID1, 0x6040, 0x00);
+		//print("Controlword=",resval);
 		//SdoWrite(C_DRIVE_BUSID1, 0x3000, 0x02, 68309521);
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3000, 0x02);
-		print("Control structure=",resval);
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3001, 0x03);
-		print("Number of pole pairs=",resval);
+		//resval = SdoRead(C_DRIVE_BUSID1, 0x3000, 0x02);
+		//print("Control structure=",resval);
+		//resval = SdoRead(C_DRIVE_BUSID1, 0x3001, 0x03);
+		//print("Number of pole pairs=",resval);
 
 
-		SdoWrite(C_DRIVE_BUSID1, 0x607A, 0x00, 500); //Target position
 		//SdoWrite(C_DRIVE_BUSID1, 0x30AE, 0x01, 30);
 		//SdoWrite(C_DRIVE_BUSID1, 0x30A0, 0x01, 3000);
 		//SdoWrite(C_DRIVE_BUSID1, 0x30A0, 0x02, 7000);
 		//SdoWrite(C_DRIVE_BUSID1, 0x30AE, 0x02, 30);
 
-		print("+++++++++++++++++++++++++++++++++++++++++++++");
-		resval = SdoRead(C_DRIVE_BUSID1, 0x607A, 0x00);
-		print("Target position=", resval);
 
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3000, 0x02);
-		print("Control structure=", resval);
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3001, 0x03);
-		print("Number of pole pairs=", resval);
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3001, 0x04);
-		print("Thermal time constant winding=", resval, " s");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3001, 0x05);
-		print("Torque constant=", resval, " mN/mA");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3003, 0x01);
-		print("Gear reduction numerator=", resval);
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3003, 0x02);
-		print("Gear reduction denominator=", resval);
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3003, 0x03);
-		print("Max gear input speed=", resval, " rpm");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3010, 0x01);
-		print("Digital incremental encoder 1 number of pulses=", resval, " pulses/rev");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3012, 0x02);
-		print("SSI number of data bits=", resval);
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3012, 0x03);
-		print("SSI encoding type=", resval);
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x3012, 0x05);
-		print("SSI timeout time=", resval, " us");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30A0, 0x01);
-		print("Current controller P gain=", resval, " mV/A");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30A0, 0x02);
-		print("Current controller I gain=", resval, " mV/(A*ms)");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30A1, 0x01);
-		print("Position controller P gain=", resval, " mA/rad");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30A1, 0x02);
-		print("Position controller I gain=", resval, " mA/(rad*s)");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30A1, 0x03);
-		print("Position controller D gain=", resval, " mA*s/rad");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30A2, 0x01);
-		print("Velocity controller P gain=", resval, " mA*s/rad");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30A2, 0x02);
-		print("Velocity controller I gain=", resval, " mA/rad");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30A2, 0x05);
-		print("Velocity controller filter cut-off frequency=", resval, " Hz");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x01);
-		print("Main loop P gain low bandwidth=", resval, " 1/s");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x02);
-		print("Main loop P gain high bandwidth=", resval, " 1/s");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x20);
-		print("Auxiliary loop P gain=", resval, " mA*s/rad");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x21);
-		print("Auxiliary loop I gain=", resval, " mA/rad");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x30);
-		print("Auxiliary loop observer position correction gain=", resval);
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x31);
-		print("Auxiliary loop observer velocity correction gain=", resval, " Hz");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x32);
-		print("Auxiliary loop observer load correction gain=", resval, " mNm/rad");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x33);
-		print("Auxiliary loop observer friction=", resval, " uNm/rad");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x30AE, 0x34);
-		print("Auxiliary loop observer inertia=", resval, " g*cm^2");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x607F, 0x00);
-		print("Max profile velocity=", resval, " mrpm");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x6080, 0x00);
-		print("Max motor speed=", resval, " rpm");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x6081, 0x00);
-		print("Profile velocity=", resval, " mrpm");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x6083, 0x00);
-		print("Profile acceleration=", resval, " rpm/s");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x6084, 0x00);
-		print("Profile deceleration=", resval, " rpm/s");
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x60A9, 0x00);
-		print("SI unit velocity=", resval);
-
-		resval = SdoRead(C_DRIVE_BUSID1, 0x6060, 0x00);
-		print("Modes of operation=", resval);
-		print("------------------------------------------");
-
-
-
+		// Retrieve the actual position (using Sysvar to read the actual position)
+		ActPosition = Sysvar[0x01606400];  // 0x01606400 is the correct SDO for actual position
+        //ActVelocity = Sysvar[0x01606C00];  // 0x01606400 is the correct SDO for actual velocity
+        //ActJointVelocity = Sysvar[0x0134CA00];  // 0x01606400 is the correct SDO for actual velocity
+        //ActTorque = Sysvar[0x01607700];  // 0x01606400 is the correct SDO for actual torque
+        //PosPgain = Sysvar[0x0130A101];  // 0x01606400 is the correct SDO for position controller P gain
+        //print("PosPgain=",PosPgain);
         // Print the actual values
         print("Actual Position: ", ActPosition);
-        print("Actual Velocity: ", ActVelocity);
-        print("Actual Torque: ", ActTorque);
+        positionLog[i] = positionLog[i] = ActPosition;ActPosition;
+        //print("Actual Velocity: ", ActVelocity);
+        //print("Actual Torque: ", ActTorque);
         //ActAvgCurrent = Sysvar[0x0130D101];  // 0x01606400 is the correct SDO for actual averaged current
         // Sysvar[BUSMOD_PROCESS_INDEX(C_AXIS1,PO_BUSMOD_VALUE3)
-        ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0,3)];
-        print("Actual Averaged Current: ", ActAvgCurrent);
+        //ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0,3)];
+        //print("Actual Averaged Current: ", ActAvgCurrent);
         // Delay for 1 ms
-        Delay(100);  // Assuming Delay(1) causes a 20-millisecond delay
+        Delay(1);  // Assuming Delay(1) causes a 20-millisecond delay
     }
+    RecordStop(0, 0); // Stop recording
 
+
+    //for (i = 0; i < 1000; i++) {
+     //   print("i=",i);
+       // print(positionLog[i]);
+        //Delay(1);
+    //}
 
 	AxisControl(C_AXIS1, OFF);
 

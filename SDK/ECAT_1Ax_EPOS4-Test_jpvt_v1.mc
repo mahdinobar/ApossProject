@@ -228,9 +228,9 @@ long main(void) {
 	Delay(3000);
 
 	RecordDest(pdo_rx_tx);  // Store recorded data in the DIM array
-	RecordTime(1);
+	//RecordTime(1);
 	RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));
-	RecordType(1);
+	//RecordType(1);
 	RecordStart(0); // Start recording (until RecordStop or DYNMEM is filled up)
 
 	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 50000);
@@ -250,14 +250,23 @@ long main(void) {
 
 
     RecordStop(0, 0); // Stop recording
+
+
+	MemoryDump(0x2100, 0, "Print.txt");
+	// Poll the execution state
+	while (MemoryDumpStatus() == 1)
+	{
+	// Wait here while the task is processing
+	}
+	print("End: result = ", MemoryDumpStatus());
     //print("HI");
 	//Save(ARRAYS);
 	//print("HI2");
 
-    for (i = 0; i < 6000; i++) {
-    	print("i=",i);
-		print("pdo_rx_tx[i]=",pdo_rx_tx[i]);
-    }
+    //for (i = 0; i < 6000; i++) {
+    //	print("i=",i);
+	//	print("pdo_rx_tx[i]=",pdo_rx_tx[i]);
+    //}
 	AxisControl(C_AXIS1, OFF);
 
 	print("Program done, Axis OFF ");

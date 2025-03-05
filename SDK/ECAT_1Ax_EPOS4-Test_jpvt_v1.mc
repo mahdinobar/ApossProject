@@ -61,6 +61,7 @@
 
 #define pos_target			2
 dim long pdo_rx_tx[6000];  // Declare a global DIM array
+wchar name_idx[3];
 
 
 long main(void) {
@@ -81,6 +82,7 @@ long main(void) {
     long positionLog[1000];
 
     long fileHandle;
+
 
 
 
@@ -201,6 +203,10 @@ long main(void) {
 		print("Error: Unable to retrieve EtherCAT master status.");
 	}
 
+	RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));
+	for (i = 0; i < 2; i++) {
+
+
 	USER_PARAM(pos_target) = 0;
 
 	print("00000000000000000000000000000000000000000000000000000000000000000000000000000000");
@@ -227,9 +233,9 @@ long main(void) {
 	print("00000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	Delay(3000);
 
-	RecordDest(pdo_rx_tx);  // Store recorded data in the DIM array
+	//RecordDest(pdo_rx_tx);  // Store recorded data in the DIM array
 	//RecordTime(1);
-	RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));
+	//RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));
 	//RecordType(1);
 	RecordStart(0); // Start recording (until RecordStop or DYNMEM is filled up)
 
@@ -249,16 +255,20 @@ long main(void) {
 	Delay(900); // Wait 200ms
 
 
+
     RecordStop(0, 0); // Stop recording
 
 
-	MemoryDump(0x2100, 0, "Print.txt");
+	MemoryDump(0x2214, 0xFFFF, "Oscillator2214_b.txt");
 	// Poll the execution state
 	while (MemoryDumpStatus() == 1)
 	{
 	// Wait here while the task is processing
 	}
 	print("End: result = ", MemoryDumpStatus());
+
+
+	}
     //print("HI");
 	//Save(ARRAYS);
 	//print("HI2");

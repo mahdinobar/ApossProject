@@ -89,13 +89,13 @@ long main(void) {
     long Kd_step = (Kd_max - Kd_min) / (d - 1);
     long Kp, Kd;
 
-	long b=0; //batch number
-	long m=5;
-	long n;  // Experiment number counter
-	n=b*m;
+	//long b=1; //batch number
+	//long m=5;
+	long n=0;  // Experiment number counter
+	//n=b*m*d+20;
 
-	Kp_min = Kp_min + b*m*Kp_step;
-	Kp_max = Kp_min + (b+1)*m*Kp_step;
+	//Kp_min = Kp_min + b*m*Kp_step + Kp_step;
+	//Kp_max = Kp_min + (b+1)*m*Kp_step;
 	print("-----------------------------------------------------------");
 	print(" Test application EtherCAT Master with 1 EPOS4 drive");
 	print("-----------------------------------------------------------");
@@ -218,7 +218,10 @@ long main(void) {
     {
         for (Kd = Kd_min; Kd <= Kd_max; Kd += Kd_step)
         {
-    		print("Batch number b = ", b, " | Experiment n = ", n, " | Set Kp = ", Kp, " | Set Kd = ", Kd);
+        	n++;
+        	if (n>=240 && n<320) {
+    		//print("Batch number b = ", b, " | Experiment n = ", n, " | Set Kp = ", Kp, " | Set Kd = ", Kd);
+			print("Experiment n = ", n, " | Set Kp = ", Kp, " | Set Kd = ", Kd);
 			USER_PARAM(pos_target) = 0;
 			//print("00000 SET INITIAL CONDITION 000000000000000000000000000000000000000000000000000000000");
 			SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 80000);
@@ -260,11 +263,10 @@ long main(void) {
 
 			Delay(900); // Wait 200ms
 
-
 			RecordStop(0, 0); // Stop recording
 
-
-			sprintf(name_data, "data_%d_%d.txt", b, n); // Format the filename	//$B
+			//sprintf(name_data, "data_%d_%d.txt", b, n); // Format the filename	//$B
+			sprintf(name_data, "DATA_%d.txt", n); // Format the filename
 			MemoryDump(0x2214, 0xFFFF, name_data);
 			//sprintf(print_data, "print_%d_%d.txt", b, n); // Format the filename
 			//MemoryDump(0x2212, 1, print_data);
@@ -274,7 +276,8 @@ long main(void) {
 			// Wait here while the task is processing
 			}
 			print("End: result = ", MemoryDumpStatus());
-			n++;
+			}
+			//n++;
 		}
 	}
 

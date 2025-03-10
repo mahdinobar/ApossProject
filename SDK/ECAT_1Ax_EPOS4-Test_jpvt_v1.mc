@@ -195,7 +195,7 @@ long main(void) {
 	}
 
 	RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));
-	for (n = 0; n < 4; i++) {	//$B
+	for (n = 0; n < 3; n++) {	//$B
 	USER_PARAM(pos_target) = 0;
 	print("00000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 8000);

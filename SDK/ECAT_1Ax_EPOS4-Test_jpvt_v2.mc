@@ -195,7 +195,7 @@ long main(void) {
 	}
 
 	RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));
-	for (n = 0; n < 5; n++) {	//$B
+	for (n = 0; n < 3; n++) {	//$B
 	USER_PARAM(pos_target) = 0;
 	print("00000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 8000);
@@ -243,8 +243,8 @@ long main(void) {
     RecordStop(0, 0); // Stop recording
 
 
-    sprintf(name_idx, "CHECK_%d.txt", n); // Format the filename
-	MemoryDump(0x2214, 0xFFFF, name_idx);	//$B
+    sprintf(name_idx, "TEST_Oscillator2214_%d.txt", n); // Format the filename	//$B
+	MemoryDump(0x2214, 0xFFFF, name_idx);
 	// Poll the execution state
 	while (MemoryDumpStatus() == 1)
 	{

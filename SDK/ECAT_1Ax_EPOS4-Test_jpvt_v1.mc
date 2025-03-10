@@ -61,29 +61,21 @@
 
 #define pos_target			2
 dim long pdo_rx_tx[6000];  // Declare a global DIM array
-wchar name_idx[3];
-
+wchar name_idx[50];
 
 long main(void) {
-
-    long slaveCount, i,retval, axisIndex;
+    long slaveCount, n,retval, axisIndex;	//$B
     long homingStateAx_0=0;
-
     long status;
 	long masterStatus;
 	long adcRawValue;
     double voltage;
     long slaveAddress;
-
 	long resval;
 	long pGain;
-
     long ActPosition, ActVelocity, ActTorque, ActAvgCurrent, ActJointVelocity, PosPgain;
     long positionLog[1000];
-
     long fileHandle;
-
-
 
 
 	print("-----------------------------------------------------------");
@@ -95,7 +87,6 @@ long main(void) {
 	InterruptSetup(ERROR, ErrorHandler);
 
 	ECatMasterCommand(0x1000, 0);
-
 
 	//----------------------------------------------------------------
 	// Application Setup
@@ -204,28 +195,21 @@ long main(void) {
 	}
 
 	RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));
-	for (i = 0; i < 2; i++) {
-
-
+	for (n = 0; n < 4; i++) {	//$B
 	USER_PARAM(pos_target) = 0;
-
 	print("00000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 8000);
 	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x01);
 	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, 4000);
 	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x03);
-
 	USER_PARAM(pos_target) = 0;
 	resval = SdoRead(C_DRIVE_BUSID1, 0x607A, 0x00);
 	print(">>>>>>> go to position=",resval);
-	//Sysvar[0x01607A00]=0;
-
 	ActPosition = Sysvar[0x01606400];  // 0x01606400 is the correct SDO for actual position
 	ActVelocity = Sysvar[0x01606C00];  // 0x01606400 is the correct SDO for actual velocity
 	ActJointVelocity = Sysvar[0x0134CA00];  // 0x01606400 is the correct SDO for actual joint velocity
 	ActTorque = Sysvar[0x01607700];  // 0x01606400 is the correct SDO for actual torque
 	ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0,3)];
-
 	print("Actual Position: ", ActPosition);
 	print("Actual Velocity: ", ActVelocity);
 	print("Actual Torque: ", ActTorque);
@@ -259,7 +243,8 @@ long main(void) {
     RecordStop(0, 0); // Stop recording
 
 
-	MemoryDump(0x2214, 0xFFFF, "Oscillator2214_b.txt");
+    sprintf(name_idx, "TEST_Oscillator2214_%d.txt", n); // Format the filename	//$B
+	MemoryDump(0x2214, 0xFFFF, name_idx);
 	// Poll the execution state
 	while (MemoryDumpStatus() == 1)
 	{
@@ -273,9 +258,9 @@ long main(void) {
 	//Save(ARRAYS);
 	//print("HI2");
 
-    //for (i = 0; i < 6000; i++) {
-    //	print("i=",i);
-	//	print("pdo_rx_tx[i]=",pdo_rx_tx[i]);
+    //for (i = 0; i < 6000; i++) {	//$B
+    //	print("i=",i);	//$B
+	//	print("pdo_rx_tx[i]=",pdo_rx_tx[i]);	//$B
     //}
 	AxisControl(C_AXIS1, OFF);
 

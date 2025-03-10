@@ -60,9 +60,8 @@
 #define	C_AXIS_KFFDEC			0
 
 #define pos_target			2
-//im long pdo_rx_tx[6000];  // Declare a global DIM array
-wchar name_data[60];
-wchar print_data[60];
+dim long pdo_rx_tx[6000];  // Declare a global DIM array
+wchar name_idx[50];
 
 long main(void) {
     long slaveCount, retval, axisIndex;	//$B
@@ -78,24 +77,13 @@ long main(void) {
     long positionLog[1000];
     long fileHandle;
 
-    long d = 20;  // Number of grid points per dimension
-    // Define Kp and Kd limits
-    long Kp_min = 70000;
-    long Kp_max = 120000;
-    long Kd_min = 2000;
-    long Kd_max = 5000;
-    // Compute step sizes
-    long Kp_step = (Kp_max - Kp_min) / (d - 1);
-    long Kd_step = (Kd_max - Kd_min) / (d - 1);
+    long d = 100;  // Number of grid points per dimension
+    long n = 0;  // Experiment number counter
+
     long Kp, Kd;
+    long Kp_min = 70000, Kp_max = 120000;
+    long Kd_min = 2000, Kd_max = 5000;
 
-	long b=0; //batch number
-	long m=5;
-	long n;  // Experiment number counter
-	n=b*m;
-
-	Kp_min = Kp_min + b*m*Kp_step;
-	Kp_max = Kp_min + (b+1)*m*Kp_step;
 	print("-----------------------------------------------------------");
 	print(" Test application EtherCAT Master with 1 EPOS4 drive");
 	print("-----------------------------------------------------------");
@@ -213,71 +201,65 @@ long main(void) {
 	}
 
 	RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));	//$B
-	// Loop through the grid of Kp and Kd values
-    for (Kp = Kp_min; Kp <= Kp_max; Kp += Kp_step)
-    {
-        for (Kd = Kd_min; Kd <= Kd_max; Kd += Kd_step)
-        {
-    		print("Batch number b = ", b, " | Experiment n = ", n, " | Set Kp = ", Kp, " | Set Kd = ", Kd);
-			USER_PARAM(pos_target) = 0;
-			//print("00000 SET INITIAL CONDITION 000000000000000000000000000000000000000000000000000000000");
-			SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 80000);
-			resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x01);
-			SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, 4000);
-			resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x03);
-			USER_PARAM(pos_target) = 0;
-			resval = SdoRead(C_DRIVE_BUSID1, 0x607A, 0x00);
-			//print(">>>>>>> go to initial position=",resval);
-			ActPosition = Sysvar[0x01606400];  // 0x01606400 is the correct SDO for actual position
-			ActVelocity = Sysvar[0x01606C00];  // 0x01606400 is the correct SDO for actual velocity
-			ActJointVelocity = Sysvar[0x0134CA00];  // 0x01606400 is the correct SDO for actual joint velocity
-			ActTorque = Sysvar[0x01607700];  // 0x01606400 is the correct SDO for actual torque
-			ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0,3)];
-			//print("Actual Position: ", ActPosition);
-			//print("Actual Velocity: ", ActVelocity);
-			//print("Actual Torque: ", ActTorque);
-			//print("Actual Averaged Current: ", ActAvgCurrent);
-			//print("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-			Delay(500);
+	Kp=Kp_min;
+	Kd=Kd_min;
+	print("Experiment n = ", n, " | Set Kp = ", Kp, " | Set Kd = ", Kd);
+	USER_PARAM(pos_target) = 0;
+	//print("00000 SET INITIAL CONDITION 000000000000000000000000000000000000000000000000000000000");
+	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, 8000);
+	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x01);
+	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, 4000);
+	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x03);
+	USER_PARAM(pos_target) = 0;
+	resval = SdoRead(C_DRIVE_BUSID1, 0x607A, 0x00);
+	//print(">>>>>>> go to initial position=",resval);
+	ActPosition = Sysvar[0x01606400];  // 0x01606400 is the correct SDO for actual position
+	ActVelocity = Sysvar[0x01606C00];  // 0x01606400 is the correct SDO for actual velocity
+	ActJointVelocity = Sysvar[0x0134CA00];  // 0x01606400 is the correct SDO for actual joint velocity
+	ActTorque = Sysvar[0x01607700];  // 0x01606400 is the correct SDO for actual torque
+	ActAvgCurrent = Sysvar[BUSMOD_PROCESS_INDEX(0,3)];
+	//print("Actual Position: ", ActPosition);
+	//print("Actual Velocity: ", ActVelocity);
+	//print("Actual Torque: ", ActTorque);
+	//print("Actual Averaged Current: ", ActAvgCurrent);
+	//print("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+	Delay(3000);
 
-			//RecordDest(pdo_rx_tx);  // Store recorded data in the DIM array
-			RecordTime(1);
-			//RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));
-			RecordType(1);
-			RecordStart(0); // Start recording (until RecordStop or DYNMEM is filled up)
-			SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, Kp);
-			resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x01);
-			//print("JPVTC controller P gain=",resval);
-			SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, Kd);
-			resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x03);
-			//print("JPVTC controller D gain=",resval);
+	//RecordDest(pdo_rx_tx);  // Store recorded data in the DIM array
+	//RecordTime(1);
+	//RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));
+	//RecordType(1);
+	RecordStart(0); // Start recording (until RecordStop or DYNMEM is filled up)
 
-			Delay(100);
+	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x01, Kp);
+	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x01);
+	//print("JPVTC controller P gain=",resval);
+	SdoWrite(C_DRIVE_BUSID1, 0x34C6, 0x03, Kd);
+	resval = SdoRead(C_DRIVE_BUSID1, 0x34C6, 0x03);
+	//print("JPVTC controller D gain=",resval);
 
-			USER_PARAM(pos_target) = 500;
-			resval = SdoRead(C_DRIVE_BUSID1, 0x607A, 0x00);
-			//print("Target position is set=",resval);
+	Delay(100);
 
-			Delay(900); // Wait 200ms
+	USER_PARAM(pos_target) = 500;
+	resval = SdoRead(C_DRIVE_BUSID1, 0x607A, 0x00);
+	//print("Target position is set=",resval);
+
+	Delay(900); // Wait 200ms
 
 
-			RecordStop(0, 0); // Stop recording
 
-
-			sprintf(name_data, "data_%d_%d.txt", b, n); // Format the filename	//$B
-			MemoryDump(0x2214, 0xFFFF, name_data);
-			//sprintf(print_data, "print_%d_%d.txt", b, n); // Format the filename
-			//MemoryDump(0x2212, 1, print_data);
-			// Poll the execution state
-			while (MemoryDumpStatus() == 1)
-			{
-			// Wait here while the task is processing
-			}
-			print("End: result = ", MemoryDumpStatus());
-			n++;
-		}
+	RecordStop(0, 0); // Stop recording
+	//$B
+	// Poll the execution state
+	while (MemoryDumpStatus() == 1)
+	{
+	// Wait here while the task is processing
 	}
+	print("End: result = ", MemoryDumpStatus());
 
+
+	sprintf(name_idx, "data_%d.txt", n); // Format the filename
+	MemoryDump(0x2214, 0xFFFF, name_idx);
 
     //for (i = 0; i < 6000; i++) {	//$B
     //	print("i=",i);	//$B

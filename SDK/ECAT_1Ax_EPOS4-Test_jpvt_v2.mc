@@ -61,14 +61,14 @@
 
 #define pos_target			2
 //im long pdo_rx_tx[6000];  // Declare a global DIM array
-wchar name_data[60];
-wchar print_data[60];
+wchar name_data[80];
+wchar print_data[80];
 
 long main(void) {
     long slaveCount, retval, axisIndex;	//$B
     long homingStateAx_0=0;
     long status;
-	long masterStatus;
+	long masterStatus, slaveStatus;
 	long adcRawValue;
     double voltage;
     long slaveAddress;
@@ -78,7 +78,7 @@ long main(void) {
     long positionLog[1000];
     long fileHandle;
 
-    long d = 20;  // Number of grid points per dimension
+    long d = 40;  // Number of grid points per dimension
     // Define Kp and Kd limits
     long Kp_min = 70000;
     long Kp_max = 120000;
@@ -113,6 +113,7 @@ long main(void) {
 	slaveCount = sdkEtherCATMasterInitialize();
 	print("slavecount: ",slaveCount);
 
+
 	// initialising maxon drives
 	sdkEpos4_SetupECatSdoParam(C_DRIVE_BUSID1, C_PDO_NUMBER, C_AXIS1_POLARITY, EPOS4_OP_JPVT );
 
@@ -120,8 +121,20 @@ long main(void) {
 
 	sdkEtherCATSetupDC(1, C_EC_CYCLE_TIME, C_EC_OFFSET);    // Setup EtherCAT DC  (cycle_time [ms], offset [us]
 
+	status = ECatMasterInfo(0x1000, 0, masterStatus);  // Pass the variable, not the address
+	print("status=",status);
+	print("A1-EtherCAT master status: ", masterStatus);
+	status = ECatMasterInfo(1, 0, slaveStatus);  // Pass the variable, not the address
+	print("status=",status);
+	print("A2-EtherCAT slave status: ", slaveStatus);
 	// starting the ethercat
 	sdkEtherCATMasterStart();
+	status = ECatMasterInfo(0x1000, 0, masterStatus);  // Pass the variable, not the address
+	print("status=",status);
+	print("B1-EtherCAT master status: ", masterStatus);
+	status = ECatMasterInfo(1, 0, slaveStatus);  // Pass the variable, not the address
+	print("status=",status);
+	print("B2-EtherCAT slave status: ", slaveStatus);
 
 	// All axis have in this example the same parameters
 
@@ -200,16 +213,16 @@ long main(void) {
 	Acc(C_AXIS1, 30);
 	Dec(C_AXIS1, 30);
 
-	status = ECatMasterInfo(0x1000, 0, masterStatus);  // Pass the variable, not the address
+	status = ECatMasterInfo(1, 0, slaveStatus);  // Pass the variable, not the address
 	if (status == 0) {
-		print("EtherCAT master status: ", masterStatus);
-		if (masterStatus == 0x08) {  // EC_STATE_OPERATIONAL
-			print("Master is operational.");
+		print("EtherCAT slave status: ", slaveStatus);
+		if (slaveStatus == 0x08) {  // EC_STATE_OPERATIONAL
+			print("Slave is operational.");
 		} else {
-			print("Master is not operational.");
+			print("Slave is not operational.");
 		}
 	} else {
-		print("Error: Unable to retrieve EtherCAT master status.");
+		print("Error: Unable to retrieve EtherCAT slave status.");
 	}
 
 	RecordIndex(0x01606400, 0x01606C00, 0x0134CA00, 0x01607700, 0x01607A00, USER_PARAM_INDEX(pos_target));	//$B
@@ -219,7 +232,7 @@ long main(void) {
         for (Kd = Kd_min; Kd <= Kd_max; Kd += Kd_step)
         {
         	n++;
-        	if (n>=240 && n<320) {
+        	if (n>=0 && n<100) {
     		//print("Batch number b = ", b, " | Experiment n = ", n, " | Set Kp = ", Kp, " | Set Kd = ", Kd);
 			print("Experiment n = ", n, " | Set Kp = ", Kp, " | Set Kd = ", Kd);
 			USER_PARAM(pos_target) = 0;
@@ -266,8 +279,9 @@ long main(void) {
 			RecordStop(0, 0); // Stop recording
 
 			//sprintf(name_data, "data_%d_%d.txt", b, n); // Format the filename	//$B
-			sprintf(name_data, "DATA_%d.txt", n); // Format the filename
+			sprintf(name_data, "data_40x40_%d.txt", n); // Format the filename
 			MemoryDump(0x2214, 0xFFFF, name_data);
+			//MemoryDump(0x2214, 0xFFFF, "ABC.txt");
 			//sprintf(print_data, "print_%d_%d.txt", b, n); // Format the filename
 			//MemoryDump(0x2212, 1, print_data);
 			// Poll the execution state

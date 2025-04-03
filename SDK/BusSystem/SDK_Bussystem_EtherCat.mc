@@ -87,6 +87,7 @@ long sdkEtherCATMasterStart(void)
 {
 	long offsetValue;
 	long dcActive = 0;
+	long res;
 
 	Delay(2);	//Wait for ECatMasterInfo(0x1000, 12) value to be updated the first time
 
@@ -106,7 +107,12 @@ long sdkEtherCATMasterStart(void)
 	}
 
     print("wait for op");
-    ECatMasterCommand(0x1000, 3);	//  request & wait OP state for all slaves
+    res=ECatMasterCommand(0x1000, 3);	//  request & wait OP state for all slaves
+	print("res1=",res);
+
+
+	res=ECatMasterCommand(1, 0x08);
+	print("res2=",res);
 
     return(1);
 }
